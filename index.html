@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nippon Paint Digital Shade Visualizer - A.S.M Agencies</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3a8a">
+<link rel="icon" type="image/png" href="https://asm-cdm.github.io/ASM-Nippon-Shade-Visualizer/favicon-192.png">
+<link rel="apple-touch-icon" href="https://asm-cdm.github.io/ASM-Nippon-Shade-Visualizer/favicon-512.png">
+<style>
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body { margin: 0; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  header { background: #0d2b52; color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,.15); flex-shrink: 0; height: 60px; }
+  .header-left, .header-center, .header-right { flex: 1; }
+  .header-left h1 { margin: 0; font-size: 16px; letter-spacing: .5px; white-space: nowrap; }
+  .header-center { text-align: center; font-size: 13px; color: #cbd8ea; font-weight: 500; }
+  .header-right { text-align: right; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .workspace { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+  .canvas-area { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; align-items: center; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); width: 100%; max-width: 900px; align-items: center; justify-content: center; flex-shrink: 0; }
+  button, select, input[type=file] { padding: 7px 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; cursor: pointer; background: #fff; }
+  .zone-bar { display: flex; gap: 4px; flex-wrap: wrap; }
+  .zbtn { width: 34px; height: 32px; padding: 0; font-weight: 700; font-size: 13px; border-radius: 5px; }
+  .zbtn.active { background: #0d2b52; color: #fff; border-color: #0d2b52; }
+  button.primary { background: #0d2b52; color: #fff; border: none; font-weight: 600; }
+  button.primary:hover { background: #164078; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .canvas-wrapper { position: relative; max-width: 900px; width: 100%; text-align: center; background: #e2e5e9; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 400px; }
+  canvas { max-width: 100%; max-height: 52vh; border: 1px solid #999; background: #fff; cursor: crosshair; display: block; }
+  .status-bar { font-size: 13px; color: #333; margin-top: 8px; font-weight: 500; }
+
+  .sidebar { width: 350px; background: #fff; border-left: 1px solid #ddd; display: flex; flex-direction: column; padding: 15px; flex-shrink: 0; overflow: hidden; }
+  .sidebar h2 { margin: 0 0 8px; font-size: 16px; color: #222; flex-shrink: 0; }
+  .search-box { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 8px; font-size: 14px; flex-shrink: 0; }
+  .filter-tabs { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; flex-shrink: 0; }
+  .tab { padding: 4px 10px; font-size: 12px; border-radius: 15px; background: #eee; border: none; cursor: pointer; }
+  .tab.active { background: #0d2b52; color: #fff; }
+  .count { font-size: 11px; color: #777; margin-bottom: 6px; flex-shrink: 0; }
+  .swatch-container { flex: 1; overflow-y: auto; min-height: 120px; margin-bottom: 8px; padding-right: 4px; }
+  .swatch-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .swatch-card { border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; height: 85px; background: #fff; }
+  .swatch-card:hover { box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+  .swatch-card.selected { border: 2px solid #0d2b52; box-shadow: 0 0 0 2px #0d2b52; }
+  .swatch-color { height: 45px; flex-shrink: 0; }
+  .swatch-info { padding: 6px 8px; flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .swatch-code { font-size: 11px; font-weight: 700; color: #555; }
+  .swatch-name { font-size: 12px; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .active-shade-banner { padding: 8px 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .preview-dot { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #999; flex-shrink: 0; }
+  .shade-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; flex-shrink: 0; align-items: center; }
+  .shade-tools input[type=color] { width: 34px; height: 30px; padding: 0; border: 1px solid #ccc; border-radius: 5px; }
+  .shade-tools button, .shade-tools a.btn { font-size: 12px; padding: 6px 9px; }
+  a.btn { border: 1px solid #0d2b52; color: #0d2b52; border-radius: 5px; text-decoration: none; background: #fff; }
+  details { margin-top: 8px; flex-shrink: 0; font-size: 12px; }
+  details summary { cursor: pointer; font-weight: 600; color: #0d2b52; }
+  .custom-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+  .custom-form input { padding: 6px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; min-width: 0; }
+  .note { font-size: 11px; color: #777; margin-top: 6px; }
+
+  footer { background: #0d2b52; color: #e2e8f0; display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 16px; padding: 0 15px; height: 40px; font-size: 12px; letter-spacing: .4px; font-weight: 500; flex-shrink: 0; }
+  footer span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #shareBtn { background: #fff; color: #0d2b52; border: none; font-weight: 700; font-size: 12px; padding: 5px 16px; border-radius: 16px; flex-shrink: 0; white-space: nowrap; }
+  #shareBtn:hover { background: #e8eef8; }
+  @media (max-width: 480px) { footer { gap: 8px; padding: 0 8px; font-size: 10.5px; letter-spacing: 0; } #shareBtn { padding: 5px 10px; font-size: 11px; } }
+  @media (max-width: 768px) {
+    body { height: auto; overflow: auto; }
+    header { flex-direction: column; gap: 4px; text-align: center; height: auto; }
+    .header-right { text-align: center; }
+    .workspace { flex-direction: column; overflow: visible; }
+    .sidebar { width: 100%; border-left: none; border-top: 1px solid #ddd; height: 620px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left"><h1>Nippon Paint Digital Shade Visualizer</h1></div>
+  <div class="header-center">Client-Side Offline Tool</div>
+  <div class="header-right">A.S.M Agencies &nbsp;|&nbsp; 94432 62945</div>
+</header>
+
+<div class="workspace">
+  <div class="canvas-area">
+    <div class="toolbar">
+      <input type="file" id="upload" accept="image/*">
+      <select id="zoneSelect" style="display:none"></select>
+      <div class="zone-bar" id="zoneBar"></div>
+      <button class="primary" id="completeZoneBtn">Apply Shade to Zone</button>
+      <button id="undoPointBtn">Undo Point</button>
+      <button id="clearZoneBtn">Clear Zone</button>
+      <label style="font-size:12px;display:flex;align-items:center;gap:5px;">Depth:
+        <input type="range" id="opacity" min="0.4" max="0.95" step="0.05" value="0.80" style="width:70px;">
+      </label>
+      <button id="downloadBtn">Save Image</button>
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="canvas"></canvas>
+      <div class="status-bar" id="statusText">Step 1: Upload a building or room photo to start.</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <h2>Nippon Paint Shade Catalog</h2>
+    <input type="text" id="searchInput" class="search-box" placeholder="Search code or name...">
+    <div class="filter-tabs" id="familyTabs"></div>
+    <div class="count" id="countText"></div>
+    <div class="swatch-container"><div class="swatch-grid" id="swatchGrid"></div></div>
+
+    <div class="active-shade-banner">
+      <div class="preview-dot" id="activeDot"></div>
+      <div>
+        <div style="font-size:11px;color:#666;">Selected Shade</div>
+        <div style="font-size:13px;font-weight:700;" id="activeLabel"></div>
+      </div>
+    </div>
+    <div class="shade-tools">
+      <input type="color" id="hexPicker" title="Fix this shade's colour">
+      <button id="eyeBtn" title="Click a swatch on the Nippon page / any screen colour">Pick from screen</button>
+      <a class="btn" href="https://nipponpaint.co.in/colour-ranges/accents/" target="_blank" rel="noopener">Open Nippon Accents</a>
+      <button id="resetHexBtn">Reset colour</button>
+    </div>
+    <details>
+      <summary>Add custom shade</summary>
+      <div class="custom-form">
+        <input id="cCode" placeholder="Code e.g. NP AC 2090 A">
+        <input id="cName" placeholder="Shade name">
+        <input id="cHex" type="color" value="#cc3333" style="height:32px;padding:0;">
+        <button id="cAddBtn" class="primary">Add shade</button>
+      </div>
+    </details>
+    <div class="note">Codes &amp; names are from Nippon's shade card. On-screen colours are indicative &mdash; always confirm with the Nippon fandeck.</div>
+  </div>
+</div>
+
+<footer><span>Powered by A.S.M Consultancy Services</span><button id="shareBtn">Share to WhatsApp</button></footer>
+
+<script>
+/* ===== MODULE 1: CATALOG DATA (edit only this block to change shades) =====
+   [code, name, hex]  -- hex is indicative, fix in app with colour picker / eyedropper */
+const CATALOG_DATA = [
+  // Accents (NP AC)
+  ["NP AC 2070 A","Talk Of The Town","#E4572E"],
+  ["NP AC 2077 A","Absolutely Pink","#BE496D"],
+  ["NP AC 2080 A","Pink Floss","#EC5F9A"],
+  ["NP AC 2085 A","Marmalade Rush","#EE7A1E"],
+  ["NP AC 3414 A","Yellow Curry","#D1A01C"],
+  // Added (hex from paintdb.com - third party, indicative)
+  ["NP YO 1113 A","Absolute Yellow","#F8CD0F"],
+  ["NP YO 1114 A","Sunray","#F4D439"],
+  ["NP YO 2562 A","Compass Gold","#E5CF30"],
+  ["NP AC 2061 A","Cheers","#FEAE00"],
+  ["NP AC 2051 A","Deep Safron","#DF9B22"],
+  ["NP AC 2058 A","Firelights","#D78830"],
+  ["NP AC 2057 A","Orange Originality","#D88030"],
+  ["NP AC 3425 A","Seduction","#67507C"],
+  ["NP AC 3424 A","Spellbound","#6A4979"],
+  ["NP AC 2134 A","Affogato","#694C44"],
+  ["NP PB 1393 A","Paradise Bird","#813E79"],
+  ["NP N 3386 A","Accented Brown","#55473F"],
+  ["NP N 3256 A","Aged Whisky","#997546"],
+  ["NP N 3274 A","Ahoy!","#616D5E"],
+  ["NP N 3143 A","Caramelised Dip","#A36744"],
+  ["NP YO 1112 D","Austere Yellow","#F7DB6A"],
+  ["NP YO 1142 D","Buttercup Bouquet","#FECA3C"],
+  ["NP YO 1099 D","Evergold","#E1C852"],
+  ["NP YO 1100 D","Yellow Jasmine","#EED456"],
+  ["NP YO 1129 T","Glory Yellow","#F9DD7E"],
+  ["NP YO 1136 P","Yellow Bag","#F8E4A6"],
+  ["NP PB 1392 T","Adolescence","#B784B6"],
+  // Bold "A" shades
+  ["NP R 1302 A","Raging Pink","#D6336C"],
+  ["NP R 1281 A","Knockout Red","#C8102E"],
+  ["NP R 1316 A","Celebrity","#C2185B"],
+  ["NP R 1295 A","Fascination","#B8325A"],
+  ["NP YO 1204 A","Orange Torch","#E8641B"],
+  ["NP YO 1197 A","Cheetah Spots","#D98A1F"],
+  ["NP YO 1190 A","Leap Of Faith","#E3A01B"],
+  ["NP YO 2462 A","Festive Orange","#F18D29"],
+  ["NP YO 1134 A","Circus Top","#E9B01C"],
+  ["NP YO 2497 A","Royal Pavilion","#E5B73B"],
+  ["NP PB 1533 A","Liberty Blue","#1F4E9C"],
+  ["NP PB 1407 A","Red Purple","#643C76"],
+  ["NP BGG 1568 A","Norse Blue","#2A6FB0"],
+  ["NP BGG 1589 A","Navajo Turquoise","#1BA3A6"],
+  ["NP BGG 1596 A","High Trek","#0F8F8A"],
+  ["NP BGG 1771 A","Great Sentosa","#1E9E6A"],
+  ["NP BGG 1680 A","Green Cape","#6BB43A"],
+  ["NP BGG 1687 A","Acid Lime","#CACE30"],
+  // Off whites
+  ["NP OW 1001 P","Whispering White","#F2EEE3"],
+  ["NP OW 1002 P","Snow White","#F7F5F0"],
+  ["NP OW 2232 P","Lily White","#F3F0E6"],
+  ["NP OW 1019 P","Soft Pulp","#F1E7C9"],
+  ["NP OW 1018 P","Cotton Bud","#F4EDE0"],
+  ["NP OW 1021 P","Swanlike","#F2EADF"],
+  ["NP OW 1030 P","Rosy Dawn","#F2DDD6"],
+  ["NP OW 1070 P","Sea Breeze","#E3EEEA"],
+  // Yellows & oranges
+  ["NP YO 1166 P","Silent Bliss","#F3E3B5"],
+  ["NP YO 2521 P","Roman Chamomile","#F3E8A9"],
+  ["NP YO 1223 P","Soft Cushion","#F6D6B4"],
+  ["NP YO 1219 T","Being Peach","#F0B98D"],
+  ["NP YO 1126 T","Yellow Ring","#FADB73"],
+  ["NP YO 1098 T","Golden Ear","#E5C25A"],
+  ["NP YO 1226 D","Tribal Art","#D9803F"],
+  // Reds & pinks
+  ["NP R 1292 P","Blusher","#F4C9CC"],
+  ["NP R 1271 P","Home Sweet Home","#F2C3AE"],
+  ["NP R 1297 T","Alba Rose","#E39AA3"],
+  ["NP R 1261 D","Koralle","#D9674C"],
+  ["NP R 1268 D","Fire Princess","#D2553F"],
+  ["NP R 1353 T","Smouldering Red","#B5382E"],
+  // Purples & blues
+  ["NP PB 2937 P","Fresh Lilac","#DCCFE8"],
+  ["NP PB 1530 P","Yours Truly","#BFD3EA"],
+  ["NP PB 1434 T","Lavender Print","#A98BC5"],
+  ["NP PB 1436 D","Prophetic Purple","#7A4F9A"],
+  ["NP PB 1534 D","True Blue","#3F6DB5"],
+  // Blue-greens & greens
+  ["NP BGG 1598 P","Nice Mint","#CBE8D4"],
+  ["NP BGG 1600 P","Pool Party","#BFE3E0"],
+  ["NP BGG 1593 P","Quiet Lake","#B4DDE0"],
+  ["NP BGG 1565 P","Smooth Sailing","#BCD8EC"],
+  ["NP BGG 2694 T","Regal Teal","#2F7F86"],
+  ["NP BGG 1590 D","Turkish Tile","#2C9BA6"],
+  ["NP BGG 1576 D","Florence Blue","#2E6FA8"],
+  ["NP BGG 1647 T","Picking Green","#8CC474"],
+  ["NP BGG 1653 D","Kiwi","#7DB440"]
+];
+
+/* ===== MODULE 2: STORE (saved on this device: hex fixes + custom shades) ===== */
+const STORE_KEY = "asm_nippon_visualizer_v1";
+function loadStore() {
+  try { return Object.assign({ hex: {}, custom: [] }, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); }
+  catch (e) { return { hex: {}, custom: [] }; }
+}
+function saveStore() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {} }
+let store = loadStore();
+
+/* ===== MODULE 3: CATALOG LOGIC ===== */
+const FAMILY_BY_PREFIX = { AC: "Accents", OW: "Off-Whites", YO: "Yellows & Oranges", R: "Reds & Pinks", PB: "Purples & Blues", BGG: "Blues & Greens" };
+const TABS = [
+  { label: "All",     test: s => true },
+  { label: "Accents", test: s => / A$/.test(s.code) || s.custom },
+  { label: "Off-Whites", test: s => s.prefix === "OW" },
+  { label: "Yellows", test: s => s.prefix === "YO" },
+  { label: "Reds",    test: s => s.prefix === "R" },
+  { label: "Purples/Blues", test: s => s.prefix === "PB" },
+  { label: "Blues/Greens", test: s => s.prefix === "BGG" },
+  { label: "Neutrals", test: s => s.prefix === "N" },
+  { label: "Custom",  test: s => s.custom }
+];
+function buildCatalog() {
+  const base = CATALOG_DATA.map(([code, name, hex]) => ({ code, name, hex: store.hex[code] || hex, defHex: hex, prefix: code.split(" ")[1], custom: false }));
+  const extra = store.custom.map(c => ({ code: c.code, name: c.name, hex: store.hex[c.code] || c.hex, defHex: c.hex, prefix: "CU", custom: true }));
+  return base.concat(extra);
+}
+let catalog = buildCatalog();
+let selectedShade = catalog[0];
+let activeTab = 0;
+
+function renderTabs() {
+  const box = document.getElementById('familyTabs');
+  box.innerHTML = '';
+  TABS.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (i === activeTab ? ' active' : '');
+    b.textContent = t.label;
+    b.onclick = () => { activeTab = i; renderTabs(); renderCatalog(); };
+    box.appendChild(b);
+  });
+}
+function norm(t) { return t.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function renderCatalog() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const qn = norm(q);
+  const grid = document.getElementById('swatchGrid');
+  grid.innerHTML = '';
+  const list = catalog.filter(s => q ? (norm(s.code).includes(qn) || s.name.toLowerCase().includes(q)) : TABS[activeTab].test(s));
+  document.getElementById('countText').textContent = list.length + " shades";
+  if (!list.length) grid.innerHTML = '<div style="grid-column:1/-1;font-size:12px;color:#777;padding:8px">Not in catalog yet. Use <b>Add custom shade</b> below, with the code and a colour.</div>';
+  list.forEach(shade => {
+    const card = document.createElement('div');
+    card.className = 'swatch-card' + (selectedShade.code === shade.code ? ' selected' : '');
+    card.innerHTML = `<div class="swatch-color" style="background:${shade.hex}"></div>
+      <div class="swatch-info"><div class="swatch-code">${shade.code}</div><div class="swatch-name" title="${shade.name}">${shade.name}</div></div>`;
+    card.onclick = () => selectShade(shade);
+    grid.appendChild(card);
+  });
+}
+function refreshSelectedBanner() {
+  document.getElementById('activeDot').style.background = selectedShade.hex;
+  document.getElementById('activeLabel').textContent = `${selectedShade.code} - ${selectedShade.name}`;
+  document.getElementById('hexPicker').value = selectedShade.hex.toLowerCase();
+}
+function selectShade(shade) {
+  selectedShade = shade;
+  zones[zoneSelect.value].shade = shade;
+  refreshSelectedBanner();
+  renderCatalog();
+  renderCanvas();
+}
+
+/* ===== MODULE 4: SHADE COLOUR FIX (picker + eyedropper + custom shades) ===== */
+function setShadeHex(code, hex) {
+  store.hex[code] = hex;
+  saveStore();
+  catalog = buildCatalog();
+  selectedShade = catalog.find(s => s.code === code) || catalog[0];
+  zones.forEach(z => { const f = catalog.find(s => s.code === z.shade.code); if (f) z.shade = f; });
+  refreshSelectedBanner(); renderCatalog(); renderCanvas();
+}
+document.getElementById('hexPicker').addEventListener('input', e => setShadeHex(selectedShade.code, e.target.value));
+document.getElementById('resetHexBtn').addEventListener('click', () => {
+  delete store.hex[selectedShade.code]; saveStore();
+  setShadeHex(selectedShade.code, selectedShade.defHex);
+  delete store.hex[selectedShade.code]; saveStore();
+});
+document.getElementById('eyeBtn').addEventListener('click', async () => {
+  if (!window.EyeDropper) { alert("Pick from screen works only in desktop Chrome / Edge. Use the colour box instead."); return; }
+  try { const r = await new EyeDropper().open(); setShadeHex(selectedShade.code, r.sRGBHex); } catch (e) {}
+});
+document.getElementById('cAddBtn').addEventListener('click', () => {
+  const code = document.getElementById('cCode').value.trim();
+  const name = document.getElementById('cName').value.trim() || "Custom";
+  const hex = document.getElementById('cHex').value;
+  if (!code) { alert("Enter a shade code."); return; }
+  if (catalog.some(s => s.code.toLowerCase() === code.toLowerCase())) { alert("This code already exists."); return; }
+  store.custom.push({ code, name, hex }); saveStore();
+  catalog = buildCatalog();
+  activeTab = TABS.length - 1; renderTabs();
+  selectShade(catalog.find(s => s.code === code));
+  document.getElementById('cCode').value = ''; document.getElementById('cName').value = '';
+});
+
+/* ===== MODULE 5: ZONES & CANVAS ===== */
+const MAX_SIDE = 1600;
+let img = null;
+/* ZONES: change ZONE_COUNT to 5 / 7 / any number. Zones are numbered only. */
+const ZONE_COUNT = 7;
+let zones = Array.from({ length: ZONE_COUNT }, (_, i) => ({ name: "Zone " + (i + 1), points: [], filled: false, shade: selectedShade }));
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const zoneSelect = document.getElementById('zoneSelect');
+const statusText = document.getElementById('statusText');
+const opacityInput = document.getElementById('opacity');
+
+document.getElementById('searchInput').addEventListener('input', renderCatalog);
+
+document.getElementById('upload').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const im = new Image();
+    im.onload = () => {
+      const w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+      const k = Math.min(1, MAX_SIDE / Math.max(w, h));
+      canvas.width = Math.round(w * k); canvas.height = Math.round(h * k);
+      img = im;
+      zones.forEach(z => { z.points = []; z.filled = false; });
+      statusText.textContent = "Step 2: Click corners around Zone 1, then click 'Apply Shade to Zone'. Use the number buttons for more zones.";
+      renderCanvas();
+    };
+    im.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+canvas.addEventListener('click', e => {
+  if (!img) { alert("Please upload an image first."); return; }
+  const z = zones[zoneSelect.value];
+  if (z.filled) { statusText.textContent = "Zone already filled. Click 'Clear Zone' to redraw."; return; }
+  const r = canvas.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  z.points.push({ x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height });
+  renderCanvas();
+});
+
+document.getElementById('completeZoneBtn').addEventListener('click', () => {
+  const z = zones[zoneSelect.value];
+  if (z.points.length < 3) { alert("Please click at least 3 corner points on the image first."); return; }
+  z.filled = true; z.shade = selectedShade;
+  statusText.textContent = `Applied ${selectedShade.code} to ${z.name}. Pick any swatch to change live!`;
+  renderCanvas();
+});
+document.getElementById('undoPointBtn').addEventListener('click', () => {
+  const z = zones[zoneSelect.value];
+  if (z.filled) { statusText.textContent = "Zone is applied. Use 'Clear Zone' to redraw."; return; }
+  z.points.pop(); renderCanvas();
+});
+document.getElementById('clearZoneBtn').addEventListener('click', () => {
+  const z = zones[zoneSelect.value];
+  z.points = []; z.filled = false;
+  statusText.textContent = `Cleared ${z.name}. Click corners to mark again.`;
+  renderCanvas();
+});
+zones.forEach((z, i) => { const o = document.createElement('option'); o.value = i; o.textContent = z.name; zoneSelect.appendChild(o); });
+zoneSelect.value = 0;
+
+function renderZoneBar() {
+  const bar = document.getElementById('zoneBar');
+  bar.innerHTML = '';
+  zones.forEach((z, i) => {
+    const b = document.createElement('button');
+    b.className = 'zbtn' + (String(i) === String(zoneSelect.value) ? ' active' : '');
+    b.textContent = i + 1;
+    b.title = z.name + (z.filled ? ' - ' + z.shade.code : '');
+    if (z.filled) b.style.boxShadow = 'inset 0 -7px 0 ' + z.shade.hex;
+    b.onclick = () => switchZone(i);
+    bar.appendChild(b);
+  });
+}
+function switchZone(i) {
+  zoneSelect.value = i;
+  const z = zones[i];
+  if (z.filled) { selectShade(z.shade); }
+  else { z.shade = selectedShade; renderCanvas(); }
+  statusText.textContent = z.filled ? `${z.name}: ${z.shade.code}. Pick any swatch to change it.` : `${z.name}: click corners on the image, then 'Apply Shade to Zone'.`;
+}
+function drawBadges() {
+  const r = Math.max(12, canvas.width / 70);
+  zones.forEach((z, i) => {
+    if (!z.points.length) return;
+    const cx = z.points.reduce((a, p) => a + p.x, 0) / z.points.length;
+    const cy = z.points.reduce((a, p) => a + p.y, 0) / z.points.length;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    ctx.fillStyle = '#0d2b52'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(r * 1.2)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), cx, cy + 1);
+    ctx.restore();
+  });
+}
+opacityInput.addEventListener('input', renderCanvas);
+
+function paintZone(c, zone, alpha) {
+  c.save();
+  c.beginPath();
+  c.moveTo(zone.points[0].x, zone.points[0].y);
+  zone.points.forEach(p => c.lineTo(p.x, p.y));
+  c.closePath(); c.clip();
+  c.fillStyle = zone.shade.hex;
+  c.globalCompositeOperation = 'multiply';   // keeps shadows / texture, darkens
+  c.globalAlpha = alpha * 0.55;
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.globalCompositeOperation = 'color';      // applies the paint hue even on light/dark walls
+  c.globalAlpha = alpha;
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.restore();
+}
+function drawScene(c) {
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+  c.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const a = parseFloat(opacityInput.value);
+  zones.forEach(z => { if (z.filled && z.points.length >= 3) paintZone(c, z, a); });
+}
+function renderCanvas() {
+  renderZoneBar();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!img) {
+    canvas.width = 600; canvas.height = 400;
+    ctx.fillStyle = "#666"; ctx.font = "16px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("Upload an image using the button above", 300, 200);
+    return;
+  }
+  drawScene(ctx);
+  const z = zones[zoneSelect.value];
+  if (!z.filled && z.points.length > 0) {
+    ctx.save();
+    ctx.strokeStyle = '#00ff00'; ctx.lineWidth = Math.max(3, canvas.width / 300);
+    ctx.beginPath(); ctx.moveTo(z.points[0].x, z.points[0].y);
+    z.points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+    ctx.fillStyle = '#0d2b52';
+    z.points.forEach(p => {
+      ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(6, canvas.width / 180), 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    ctx.restore();
+  }
+  drawBadges();
+}
+
+/* ===== MODULE 6: EXPORT (image + shade code legend) ===== */
+const AGENCY_NAME = "A.S.M Agencies";
+const AGENCY_CELL = "Cell: 94432 62945";
+const EXPORT_NOTE = "Screen colours are indicative. Please confirm with the Nippon shade card.";
+
+function fitText(o, text, maxW) {
+  if (o.measureText(text).width <= maxW) return text;
+  while (text.length > 1 && o.measureText(text + "...").width > maxW) text = text.slice(0, -1);
+  return text + "...";
+}
+function drawShadeList(o, items, y0, W, fs, cols, rowH, pad) {
+  const rows = Math.ceil(items.length / cols);
+  const colW = (W - pad * 2) / cols;
+  const box = fs * 1.5;
+  o.textBaseline = 'middle'; o.textAlign = 'left';
+  o.font = `700 ${fs}px sans-serif`;
+  const codeW = Math.max(...items.map(it => o.measureText(it.z.shade.code).width));
+  items.forEach((it, i) => {
+    const col = Math.floor(i / rows), row = i % rows;
+    const x = pad + col * colW, y = y0 + pad + row * rowH + rowH / 2;
+    o.fillStyle = it.z.shade.hex; o.fillRect(x, y - box / 2, box, box);
+    o.strokeStyle = '#94a3b8'; o.lineWidth = 1; o.strokeRect(x, y - box / 2, box, box);
+    o.font = `700 ${fs}px sans-serif`;
+    o.fillStyle = '#0d2b52'; o.fillText(String(it.n), x + box + fs * 0.6, y);
+    const cx = x + box + fs * 2.1;
+    o.fillStyle = '#111827'; o.fillText(it.z.shade.code, cx, y);
+    o.font = `${fs}px sans-serif`;
+    const nx = cx + codeW + fs * 0.8;
+    o.fillText(fitText(o, it.z.shade.name, x + colW - nx - fs * 0.5), nx, y);
+  });
+}
+function drawAgencyRow(o, y, W, fs, h) {
+  o.fillStyle = '#0d2b52'; o.fillRect(0, y, W, h);
+  o.fillStyle = '#fff'; o.textBaseline = 'middle';
+  o.font = `700 ${fs}px sans-serif`;
+  o.textAlign = 'left'; o.fillText(AGENCY_NAME, fs, y + h / 2);
+  o.textAlign = 'right'; o.fillText(AGENCY_CELL, W - fs, y + h / 2);
+}
+function drawNoteRow(o, y, W, fs, h) {
+  let size = Math.round(fs * 0.78);
+  o.font = `italic ${size}px sans-serif`;
+  while (o.measureText(EXPORT_NOTE).width > W - fs * 2 && size > 8) { size--; o.font = `italic ${size}px sans-serif`; }
+  o.fillStyle = '#64748b'; o.textAlign = 'center'; o.textBaseline = 'middle';
+  o.fillText(EXPORT_NOTE, W / 2, y + h / 2);
+}
+function exportImage() {
+  if (!img) { alert("No image loaded to save."); return; }
+  const items = zones.map((z, i) => ({ z, n: i + 1 })).filter(it => it.z.filled);
+  const W = canvas.width, H = canvas.height;
+  const fs = Math.max(16, Math.round(W / 48));
+  const cols = (H > W || items.length <= 3) ? 1 : 2;   // auto layout
+  const rows = Math.ceil(items.length / cols);
+  const rowH = Math.round(fs * 2.3), pad = Math.round(fs * 0.9);
+  const listH = items.length ? pad * 2 + rows * rowH : 0;
+  const agencyH = Math.round(fs * 2.4), noteH = Math.round(fs * 1.9);
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H + listH + agencyH + noteH;
+  const o = out.getContext('2d');
+  drawScene(o);
+  o.globalCompositeOperation = 'source-over'; o.globalAlpha = 1;
+  o.fillStyle = '#fff'; o.fillRect(0, H, W, out.height - H);
+  if (items.length) drawShadeList(o, items, H, W, fs, cols, rowH, pad);
+  drawAgencyRow(o, H + listH, W, fs, agencyH);
+  drawNoteRow(o, H + listH + agencyH, W, fs, noteH);
+  const a = document.createElement('a');
+  a.download = 'ASM-Agencies-Nippon-Preview.png';
+  a.href = out.toDataURL('image/png');
+  a.click();
+}
+document.getElementById('downloadBtn').addEventListener('click', exportImage);
+
+/* ===== MODULE 7: SHARE ON WHATSAPP ===== */
+const APP_URL = "https://asm-cdm.github.io/ASM-Nippon-Shade-Visualizer/";
+const SHARE_TEXT = "Try Nippon Paint shades on your own wall photo - A.S.M Agencies Shade Visualizer:";
+function shareOnWhatsApp() {
+  window.open("https://wa.me/?text=" + encodeURIComponent(SHARE_TEXT + "\n" + APP_URL), "_blank");
+}
+document.getElementById('shareBtn').addEventListener('click', shareOnWhatsApp);
+
+/* ===== MODULE 8: INSTALL / OFFLINE (common sw.js) ===== */
+function setupInstall() {
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+}
+setupInstall();
+
+/* ===== START ===== */
+renderTabs(); refreshSelectedBanner(); renderCatalog(); renderCanvas();
+</script>
+</body>
+</html>
