@@ -1,0 +1,22 @@
+{
+  "name": "A S M Nippon Shade Visualizer",
+  "short_name": "ASM Shades",
+  "id": "/ASM-Nippon-Shade-Visualizer/",
+  "start_url": "/ASM-Nippon-Shade-Visualizer/",
+  "scope": "/ASM-Nippon-Shade-Visualizer/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "https://asm-cdm.github.io/ASM-Nippon-Shade-Visualizer/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://asm-cdm.github.io/ASM-Nippon-Shade-Visualizer/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
